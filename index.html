@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Brückenbauer</title>
+<meta name="description" content="Brückenbauer – baue Brücken über Schluchten und Flüsse und schau, ob Autos, Busse und LKWs sicher ans Ziel kommen.">
+<meta name="theme-color" content="#2f86d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brückenbauer">
+<meta name="application-name" content="Brückenbauer">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="stylesheet" href="style.css">
+<script defer src="js/audio.js"></script>
+<script defer src="js/save.js"></script>
+<script defer src="js/physics.js"></script>
+<script defer src="js/levels.js"></script>
+<script defer src="js/render.js"></script>
+<script defer src="js/editor.js"></script>
+<script defer src="js/main.js"></script>
+</head>
+<body data-screen="loading">
+
+<!-- ===================== Icon sprite (inline SVG, 24×24) ===================== -->
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 4.5L7 12l7.5 7.5"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 10v10h4.5v-5.5h3V20H18V10"/></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24"><path d="M3.5 9.2h3.8L12.5 5v14l-5.2-4.2H3.5z" fill="currentColor"/><path d="M15.8 8.8a4.6 4.6 0 0 1 0 6.4M18.4 6.2a8.3 8.3 0 0 1 0 11.6"/></symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24"><path d="M3.5 9.2h3.8L12.5 5v14l-5.2-4.2H3.5z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><rect x="9" y="9" width="6" height="6" rx="1.2"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M8.6 8.8a3.5 3.5 0 1 1 5.2 3.1c-1.1.6-1.8 1.3-1.8 2.6v.6"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M14.2 4.3l5.5 5.5-8.6 8.7H6.9l-3-3a1.6 1.6 0 0 1 0-2.3z"/><path d="M8.6 9.9l5.5 5.5M11 18.5h9"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8.5 14.5L3.5 9.5l5-5"/><path d="M3.8 9.5h10a5.5 5.5 0 0 1 0 11H10"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15.5 14.5l5-5-5-5"/><path d="M20.2 9.5h-10a5.5 5.5 0 0 0 0 11H14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 3.5h5M6.2 6.5l1 13.5h9.6l1-13.5M10 10.5v6M14 10.5v6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7.5 4.8v14.4L19.5 12z" fill="currentColor"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5.5" y="5.5" width="13" height="13" rx="2.6" fill="currentColor"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.6l2.85 5.95 6.45.82-4.72 4.48 1.2 6.43L12 17.15l-5.78 3.13 1.2-6.43L2.7 9.37l6.45-.82z" fill="currentColor"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="10" rx="2.6" fill="currentColor"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M15.2 4.6l4.2 4.2L8.9 19.3l-5.2 1 1-5.2z"/><path d="M12.8 7l4.2 4.2"/></symbol>
+    <symbol id="i-anchor" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 20l2.3-6.5h5.4L17 20"/><circle cx="12" cy="8.5" r="3.6"/><circle cx="12" cy="8.5" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-terrain" viewBox="0 0 24 24"><path d="M2.5 19.5l6-9.5 4 5.5 3-4 6 8z"/><circle cx="8.5" cy="10" r="1.6" fill="currentColor"/><circle cx="15.5" cy="11.5" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-point-x" viewBox="0 0 24 24"><circle cx="9" cy="14.5" r="4.5"/><path d="M15 3.5l5.5 5.5M20.5 3.5L15 9"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3L5.5 5.5"/><circle cx="12" cy="12" r="6.6"/></symbol>
+    <symbol id="i-sandbox" viewBox="0 0 24 24"><path d="M2.5 20.5c2.5-3.2 6-4.6 9.5-4.6s7 1.4 9.5 4.6z" fill="currentColor"/><path d="M15.5 3l-3.2 9.6"/><path d="M9.6 11.4l4.6 1.6-1 3.2-4.6-1.6z" fill="currentColor"/></symbol>
+    <symbol id="i-levels" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></symbol>
+    <symbol id="i-tools" viewBox="0 0 24 24"><path d="M3.5 20.5l3.8-1 11-11-2.8-2.8-11 11z"/><path d="M13.6 6.6l2.8 2.8"/><path d="M14 20.5h6.5M17.3 17.2v6.6" transform="translate(0 -3)"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.8l4.8 4.7L19.5 6.8"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.8v11M7.2 10.2L12 15l4.8-4.8M4.5 19.8h15"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.2 8.6L12 3.8l4.8 4.8M4.5 19.8h15"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.2 17.6h5.6M10.2 20.8h3.6"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1 1.3 1 2.3h5.2c0-1 .3-1.7 1-2.3A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-stress" viewBox="0 0 24 24"><path d="M3 17.5l5-6.5 4 4 9-9.5"/><path d="M15.5 5.5H21v5.5"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 12.5a7.5 7.5 0 1 0 2.3-5.4"/><path d="M4.5 3.8v5h5"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11.2L19.5 7.3V20H5z"/><path d="M8.2 4v4.8h7V4M8.2 20v-6h8v6"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V3.8"/><path d="M5.5 4.2h12.5l-2.6 4.2 2.6 4.2H5.5" fill="currentColor"/></symbol>
+    <symbol id="i-test" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10"/><path d="M3.8 6.5l1.4 1.4 2.4-2.6M3.8 12l1.4 1.4L7.6 10.8M3.8 17.5l1.4 1.4 2.4-2.6"/></symbol>
+    <symbol id="i-storage" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.6l9.3 16.2H2.7z"/><path d="M12 9.5v4.6"/><circle cx="12" cy="17" r="1.2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="5.5" cy="15.5" r="3.8"/><circle cx="18.5" cy="15.5" r="3.8"/><path d="M5.5 15.5l4-7h6.5l2.5 7M9.5 8.5l3.5 7h-7.5M8 6h3.2M15.5 8.5l-1-2.5h2.5"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M2.5 16v-3.4c0-.8.5-1.4 1.3-1.6L6 10.4 8.4 6.8c.4-.5.9-.8 1.6-.8h4.6c.6 0 1.1.3 1.5.7l3 3.7 1.6.4c.8.2 1.3.8 1.3 1.6V16z" fill="currentColor" stroke="none"/><circle cx="7" cy="16.5" r="2.4" fill="#fff"/><circle cx="17" cy="16.5" r="2.4" fill="#fff"/><circle cx="7" cy="16.5" r="2.4"/><circle cx="17" cy="16.5" r="2.4"/></symbol>
+    <symbol id="i-bus" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="11.5" rx="2.4" fill="currentColor" stroke="none"/><path d="M4.5 8h3.5v3H4.5zM9.5 8h3.5v3H9.5zM14.5 8h3.5v3h-3.5z" fill="#fff" stroke="none"/><circle cx="6.5" cy="17" r="2.2" fill="#fff"/><circle cx="17.5" cy="17" r="2.2" fill="#fff"/><circle cx="6.5" cy="17" r="2.2"/><circle cx="17.5" cy="17" r="2.2"/></symbol>
+    <symbol id="i-truck" viewBox="0 0 24 24"><rect x="1.8" y="4.5" width="13" height="11" rx="1.4" fill="currentColor" stroke="none"/><path d="M15.5 8h3.4l3.3 3.8V15.5h-6.7z" fill="currentColor" stroke="none"/><circle cx="6" cy="17" r="2.2" fill="#fff"/><circle cx="18" cy="17" r="2.2" fill="#fff"/><circle cx="6" cy="17" r="2.2"/><circle cx="18" cy="17" r="2.2"/></symbol>
+  </defs>
+</svg>
+
+<canvas id="game" aria-label="Spielfeld"></canvas>
+
+<div id="ui">
+
+  <!-- ===================== Laden ===================== -->
+  <section id="screen-loading" class="screen active" aria-live="polite">
+    <div class="loading-box">
+      <div class="logo-text small">Brückenbauer</div>
+      <div class="loading-dots"><i></i><i></i><i></i></div>
+      <p class="loading-fail">Das Spiel konnte nicht gestartet werden.<br>Bitte lade die Seite neu.</p>
+    </div>
+  </section>
+
+  <!-- ===================== Hauptmenü ===================== -->
+  <section id="screen-menu" class="screen hud">
+    <div class="menu-panel">
+      <div class="logo" aria-label="Brückenbauer">
+        <svg class="logo-svg" viewBox="0 0 520 150" role="img" aria-hidden="true">
+          <g class="logo-bridge" transform="translate(40 92)">
+            <path d="M0 40 Q 220 -38 440 40" fill="none" stroke="#233047" stroke-width="13" stroke-linecap="round"/>
+            <path d="M0 40 Q 220 -38 440 40" fill="none" stroke="#e8553a" stroke-width="7" stroke-linecap="round"/>
+            <path d="M44 22v18M88 9v31M132 0v40M176 -5v45M220 -6v46M264 -5v45M308 0v40M352 9v31M396 22v18" stroke="#233047" stroke-width="5" stroke-linecap="round"/>
+            <rect x="-10" y="38" width="460" height="12" rx="6" fill="#3b4558" stroke="#233047" stroke-width="4"/>
+            <path d="M14 44h26M66 44h26M118 44h26M170 44h26M222 44h26M274 44h26M326 44h26M378 44h26" stroke="#ffd23f" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <text x="260" y="78" text-anchor="middle" textLength="470" lengthAdjust="spacingAndGlyphs" class="logo-word">Brückenbauer</text>
+        </svg>
+      </div>
+      <nav class="menu-buttons">
+        <button type="button" class="btn btn-orange btn-xl" id="m-play"><svg class="ic"><use href="#i-play"/></svg><span>Spielen</span></button>
+        <button type="button" class="btn btn-blue" id="m-sandbox"><svg class="ic"><use href="#i-sandbox"/></svg><span>Sandkasten</span></button>
+        <button type="button" class="btn btn-purple" id="m-custom"><svg class="ic"><use href="#i-levels"/></svg><span>Eigene Level</span></button>
+        <button type="button" class="btn btn-teal" id="m-editor"><svg class="ic"><use href="#i-edit"/></svg><span>Level-Editor</span></button>
+        <button type="button" class="btn btn-white" id="m-settings"><svg class="ic"><use href="#i-gear"/></svg><span>Einstellungen</span></button>
+      </nav>
+      <div class="backup-banner" id="m-backup" hidden>
+        <svg class="ic"><use href="#i-save"/></svg>
+        <div class="backup-text"><b>Spielstand sichern?</b><span>Sichere deinen Fortschritt ab und zu als Datei.</span></div>
+        <button type="button" class="btn btn-yellow btn-sm" id="m-backup-now">Jetzt sichern</button>
+      </div>
+    </div>
+    <div class="corner-buttons">
+      <button type="button" class="btn btn-white btn-icon mute-btn" title="Ton an/aus" aria-label="Ton an/aus"><svg class="ic"><use href="#i-sound-on"/></svg></button>
+    </div>
+  </section>
+
+  <!-- ===================== Levelauswahl ===================== -->
+  <section id="screen-levels" class="screen page">
+    <header class="page-head">
+      <button type="button" class="btn btn-white btn-back" data-go="menu"><svg class="ic"><use href="#i-back"/></svg><span>Menü</span></button>
+      <h1>Levelauswahl</h1>
+      <div class="head-stat" title="Gesammelte Sterne"><svg class="ic star-ic"><use href="#i-star"/></svg><span id="levels-stars">0 / 0</span></div>
+    </header>
+    <div class="page-body scroll">
+      <div id="level-grid" class="level-grid"></div>
+    </div>
+  </section>
+
+  <!-- ===================== Spiel (Bauen / Testfahrt) ===================== -->
+  <section id="screen-game" class="screen hud">
+    <div class="topbar">
+      <button type="button" class="btn btn-white btn-hud" id="g-back" title="Zurück"><svg class="ic"><use href="#i-back"/></svg><span id="g-back-label">Zurück</span></button>
+      <div class="pill title-pill"><span class="pill-num" id="g-num">1</span><span class="pill-text" id="g-name">Level</span></div>
+      <div class="pill cost-pill" id="g-cost">
+        <div class="cost-line"><span class="cost-label">Kosten</span> <b id="g-cost-val">0&nbsp;€</b> <span class="cost-sep">/</span> <span id="g-budget">0&nbsp;€</span><span class="cost-delta" id="g-cost-delta"></span></div>
+        <div class="cost-bar" id="g-cost-bar"><i></i><b class="mark m75"></b><b class="mark m90"></b></div>
+      </div>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-white btn-icon mute-btn" title="Ton an/aus" aria-label="Ton an/aus"><svg class="ic"><use href="#i-sound-on"/></svg></button>
+      <button type="button" class="btn btn-white btn-icon" id="g-fit" title="Ganze Szene zeigen" aria-label="Ganze Szene zeigen"><svg class="ic"><use href="#i-fit"/></svg></button>
+      <button type="button" class="btn btn-white btn-icon" id="g-help" title="So geht's" aria-label="Hilfe"><svg class="ic"><use href="#i-help"/></svg></button>
+    </div>
+
+    <div class="hint-card" id="g-hint" hidden>
+      <svg class="ic hint-ic"><use href="#i-bulb"/></svg>
+      <div class="hint-body"><p id="g-hint-text"></p><p class="hint-sub" id="g-hint-sub"></p></div>
+      <button type="button" class="hint-close" id="g-hint-close" aria-label="Hinweis schließen"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+
+    <div class="bottombar" id="bar-build">
+      <div class="bar-group mats" id="mat-list"></div>
+      <div class="bar-group tools">
+        <button type="button" class="tool" id="t-delete" title="Löschen (E)"><svg class="ic"><use href="#i-eraser"/></svg><span>Löschen</span></button>
+        <button type="button" class="tool" id="t-undo" title="Rückgängig (Strg+Z)"><svg class="ic"><use href="#i-undo"/></svg><span>Rückgängig</span></button>
+        <button type="button" class="tool" id="t-redo" title="Wiederholen (Strg+Y)"><svg class="ic"><use href="#i-redo"/></svg><span>Wiederholen</span></button>
+        <button type="button" class="tool" id="t-clear" title="Alles löschen"><svg class="ic"><use href="#i-trash"/></svg><span>Alles löschen</span></button>
+      </div>
+      <button type="button" class="btn btn-green btn-big" id="t-test" data-snd="none" title="Testfahrt (Leertaste)"><svg class="ic"><use href="#i-play"/></svg><span>Testfahrt</span></button>
+    </div>
+
+    <div class="bottombar test" id="bar-test">
+      <button type="button" class="btn btn-red btn-big" id="t-stop" title="Stopp (Leertaste)"><svg class="ic"><use href="#i-stop"/></svg><span>Stopp</span></button>
+      <div class="seg" id="speed-seg" role="group" aria-label="Geschwindigkeit">
+        <button type="button" data-speed="0.25">Zeitlupe</button>
+        <button type="button" data-speed="1" class="on">1×</button>
+        <button type="button" data-speed="2">2×</button>
+      </div>
+      <button type="button" class="toggle-chip" id="t-stress" aria-pressed="true"><svg class="ic"><use href="#i-stress"/></svg><span>Belastung</span><i class="sw"></i></button>
+      <div class="pill progress-pill" id="t-progress"><svg class="ic"><use href="#i-flag"/></svg><span id="t-progress-text">0 / 0</span></div>
+    </div>
+  </section>
+
+  <!-- ===================== Sandkasten-Einstellungen ===================== -->
+  <section id="screen-sandbox" class="screen page">
+    <header class="page-head">
+      <button type="button" class="btn btn-white btn-back" data-go="menu"><svg class="ic"><use href="#i-back"/></svg><span>Menü</span></button>
+      <h1>Sandkasten</h1>
+      <div class="head-stat muted-text">Baue frei – ohne Budget</div>
+    </header>
+    <div class="page-body scroll">
+      <div class="sandbox-layout">
+        <div class="card preview-card">
+          <div class="preview-box" id="sb-preview"></div>
+          <p class="preview-caption" id="sb-caption"></p>
+        </div>
+        <div class="card params-card" id="sb-params"></div>
+      </div>
+    </div>
+    <footer class="page-foot">
+      <button type="button" class="btn btn-green btn-big" id="sb-go"><svg class="ic"><use href="#i-play"/></svg><span>Los geht's</span></button>
+    </footer>
+  </section>
+
+  <!-- ===================== Eigene Level ===================== -->
+  <section id="screen-custom" class="screen page">
+    <header class="page-head">
+      <button type="button" class="btn btn-white btn-back" data-go="menu"><svg class="ic"><use href="#i-back"/></svg><span>Menü</span></button>
+      <h1>Eigene Level</h1>
+      <button type="button" class="btn btn-teal btn-sm" id="c-new"><svg class="ic"><use href="#i-plus"/></svg><span>Neues Level</span></button>
+    </header>
+    <div class="page-body scroll">
+      <div id="custom-list" class="custom-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== Level-Editor ===================== -->
+  <section id="screen-editor" class="screen hud">
+    <div class="topbar">
+      <button type="button" class="btn btn-white btn-hud" id="e-back"><svg class="ic"><use href="#i-back"/></svg><span>Zurück</span></button>
+      <div class="pill title-pill"><span class="pill-num"><svg class="ic"><use href="#i-edit"/></svg></span><span class="pill-text" id="e-title">Level-Editor</span></div>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-white btn-icon" id="e-fit" title="Ganze Szene zeigen" aria-label="Ganze Szene zeigen"><svg class="ic"><use href="#i-fit"/></svg></button>
+      <button type="button" class="btn btn-white btn-icon" id="e-help" title="Hilfe" aria-label="Hilfe"><svg class="ic"><use href="#i-help"/></svg></button>
+    </div>
+    <aside class="ed-panel">
+      <div class="ed-tools">
+        <div class="seg seg-tools" id="e-tools" role="group" aria-label="Werkzeug">
+          <button type="button" data-tool="anchor"><svg class="ic"><use href="#i-anchor"/></svg><span>Anker</span></button>
+          <button type="button" data-tool="terrain" class="on"><svg class="ic"><use href="#i-terrain"/></svg><span>Gelände</span></button>
+          <button type="button" data-tool="erase"><svg class="ic"><use href="#i-point-x"/></svg><span>Punkt löschen</span></button>
+        </div>
+        <button type="button" class="tool small" id="e-undo" title="Rückgängig (Strg+Z)"><svg class="ic"><use href="#i-undo"/></svg><span>Zurück</span></button>
+      </div>
+      <p class="ed-tip" id="e-tip"></p>
+      <div class="ed-scroll scroll">
+        <div class="ed-status" id="e-status"></div>
+        <label class="field">
+          <span class="field-label">Name</span>
+          <input type="text" id="e-name" maxlength="40" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+        </label>
+        <div class="field">
+          <span class="field-label">Budget</span>
+          <div class="budget-row">
+            <button type="button" class="step-btn" id="e-budget-minus" aria-label="Budget verringern"><svg class="ic"><use href="#i-minus"/></svg></button>
+            <input type="text" id="e-budget" inputmode="numeric" pattern="[0-9.]*" autocomplete="off" enterkeyhint="done">
+            <span class="unit">€</span>
+            <button type="button" class="step-btn" id="e-budget-plus" aria-label="Budget erhöhen"><svg class="ic"><use href="#i-plus"/></svg></button>
+          </div>
+        </div>
+        <div class="ed-section-title">Fahrzeuge</div>
+        <div id="e-vehicles"></div>
+        <div class="ed-section-title">Grundform</div>
+        <div id="e-params"></div>
+        <button type="button" class="btn btn-white btn-wide" id="e-regen"><svg class="ic"><use href="#i-reset"/></svg><span>Grundform neu erzeugen</span></button>
+      </div>
+      <div class="ed-actions">
+        <button type="button" class="btn btn-blue" id="e-save"><svg class="ic"><use href="#i-save"/></svg><span>Speichern</span></button>
+        <button type="button" class="btn btn-green" id="e-test"><svg class="ic"><use href="#i-play"/></svg><span>Testen</span></button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ===================== Einstellungen ===================== -->
+  <section id="screen-settings" class="screen page">
+    <header class="page-head">
+      <button type="button" class="btn btn-white btn-back" data-go="menu"><svg class="ic"><use href="#i-back"/></svg><span>Menü</span></button>
+      <h1>Einstellungen</h1>
+      <div class="head-stat muted-text" id="set-version-head"></div>
+    </header>
+    <div class="page-body scroll">
+      <div class="settings-grid">
+        <div class="card">
+          <h2>Spiel</h2>
+          <div class="set-row">
+            <div class="set-label"><b>Ton</b><span>Geräusche und Musik-Effekte</span></div>
+            <button type="button" class="switch" id="set-sound" role="switch" aria-checked="true"><i></i></button>
+          </div>
+          <div class="set-row">
+            <div class="set-label"><b>Belastungsanzeige</b><span>Balken bei der Testfahrt nach Belastung einfärben</span></div>
+            <button type="button" class="switch" id="set-stress" role="switch" aria-checked="true"><i></i></button>
+          </div>
+          <div class="set-row">
+            <div class="set-label"><b>Anleitung</b><span>Wie baue ich eine Brücke?</span></div>
+            <button type="button" class="btn btn-white btn-sm" id="set-help"><svg class="ic"><use href="#i-help"/></svg><span>So geht's</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Spielstand &amp; Sicherung</h2>
+          <p class="set-info"><svg class="ic"><use href="#i-save"/></svg><span id="set-lastbackup">Letzte Sicherung: –</span></p>
+          <p class="set-info"><svg class="ic"><use href="#i-storage"/></svg><span id="set-storage">Speicher: –</span></p>
+          <div class="btn-row">
+            <button type="button" class="btn btn-blue btn-sm" id="set-export"><svg class="ic"><use href="#i-download"/></svg><span>Spielstand exportieren</span></button>
+            <button type="button" class="btn btn-white btn-sm" id="set-import"><svg class="ic"><use href="#i-upload"/></svg><span>Spielstand importieren</span></button>
+          </div>
+          <input type="file" id="set-import-file" accept=".json,application/json" hidden>
+        </div>
+
+        <div class="card">
+          <h2>Selbsttest</h2>
+          <p class="set-text">Prüft jedes eingebaute Level mit seiner Musterlösung in der Physik-Simulation.</p>
+          <button type="button" class="btn btn-teal btn-sm" id="set-selftest"><svg class="ic"><use href="#i-test"/></svg><span>Selbsttest: alle Level prüfen</span></button>
+          <p class="selftest-summary" id="selftest-summary"></p>
+          <ol class="selftest-list" id="selftest-list"></ol>
+        </div>
+
+        <div class="card card-danger">
+          <h2>Fortschritt zurücksetzen</h2>
+          <p class="set-text">Löscht Sterne, freigeschaltete Level und gebaute Brücken.</p>
+          <button type="button" class="btn btn-red btn-sm" id="set-reset"><svg class="ic"><use href="#i-reset"/></svg><span>Fortschritt zurücksetzen</span></button>
+        </div>
+
+        <p class="version-line" id="set-version"></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div id="modal-layer"></div>
+<div id="toast-layer" aria-live="polite"></div>
+
+<noscript><div class="noscript">Brückenbauer braucht JavaScript. Bitte aktiviere JavaScript in deinem Browser.</div></noscript>
+</body>
+</html>
