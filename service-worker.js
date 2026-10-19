@@ -26,7 +26,7 @@
  */
 'use strict';
 
-const VERSION = '1.0.0';
+const VERSION = '3.4.0';
 const CACHE_PREFIX = 'brueckenbauer-';
 const CACHE_NAME = CACHE_PREFIX + 'v' + VERSION;
 
@@ -39,14 +39,31 @@ const PRECACHE = [
   'js/save.js',
   'js/physics.js',
   'js/levels.js',
+  'js/levels-b.js',
+  'js/levels-c.js',
+  'js/levels-d.js',
+  'js/time.js',
+  'js/levels-time.js',
+  'js/weekly.js',
+  'js/testlab.js',
+  'js/vendor/three.min.js',
+  'js/r3d-util.js',
+  'js/r3d-models.js',
+  'js/r3d-zmodels.js',
+  'js/gallery.js',
+  'js/r3d-world.js',
+  'js/overlay.js',
+  'js/render3d.js',
   'js/render.js',
+  'js/render-bp.js',
   'js/editor.js',
   'js/main.js',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
-  'icons/icon-maskable-512.png',
-  'icons/apple-touch-icon.png',
-  'icons/favicon-32.png'
+  'icons/icon-v32-192.png',
+  'icons/icon-v32-512.png',
+  'icons/icon-v32-maskable-512.png',
+  'icons/icon-v32-180.png',
+  'icons/favicon-v32-32.png',
+  'icons/icon.svg'
 ];
 
 const DEV_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
