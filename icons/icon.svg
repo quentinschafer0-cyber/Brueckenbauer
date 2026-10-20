@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Brückenbauer app icon: flat truss bridge on a blueprint ground. Full-bleed square, no own corners; everything important sits in the central circle. -->
+  <rect width="1024" height="1024" fill="#0b2447"/>
+  <!-- blueprint paper: fine grid -->
+  <g stroke="#a8cfff" stroke-width="2" fill="none">
+    <path stroke-opacity="0.05" d="M64 0V1024M128 0V1024M192 0V1024M256 0V1024M320 0V1024M384 0V1024M448 0V1024M512 0V1024M576 0V1024M640 0V1024M704 0V1024M768 0V1024M832 0V1024M896 0V1024M960 0V1024M0 64H1024M0 128H1024M0 192H1024M0 256H1024M0 320H1024M0 384H1024M0 448H1024M0 512H1024M0 576H1024M0 640H1024M0 704H1024M0 768H1024M0 832H1024M0 896H1024M0 960H1024"/>
+    <path stroke-opacity="0.1" d="M256 0V1024M512 0V1024M768 0V1024M0 256H1024M0 512H1024M0 768H1024"/>
+  </g>
+  <!-- water in the gap: one flat band with a single surface line -->
+  <rect x="0" y="866" width="1024" height="158" fill="#124a85"/>
+  <path d="M0 866H1024" stroke="#8fc3f5" stroke-width="6" stroke-opacity="0.8"/>
+  <!-- ground: two low-poly banks -->
+  <g>
+    <polygon points="0,618 190,618 190,706 160,866 100,1024 0,1024" fill="#123a68"/>
+    <polygon points="0,618 190,618 160,866 0,762" fill="#1a4b83"/>
+    <polygon points="0,762 160,866 100,1024 0,1024" fill="#0e2f5c"/>
+    <polygon points="1024,618 834,618 834,706 864,866 924,1024 1024,1024" fill="#123a68"/>
+    <polygon points="1024,618 834,618 864,866 1024,762" fill="#1a4b83"/>
+    <polygon points="1024,762 864,866 924,1024 1024,1024" fill="#0e2f5c"/>
+  </g>
+  <!-- bank outlines (fine light lines) -->
+  <g fill="none" stroke="#dff0ff" stroke-linejoin="round" stroke-linecap="round">
+    <path stroke-width="9" d="M0 618H190V706L160 866 100 1024M1024 618H834V706L864 866 924 1024"/>
+    <path stroke-width="3" stroke-opacity="0.32" d="M0 762L160 866M1024 762L864 866"/>
+  </g>
+  <!-- dimension line below the span -->
+  <g fill="none" stroke="#dff0ff" stroke-opacity="0.42" stroke-width="4" stroke-linecap="round">
+    <path d="M190 756H834M190 740V772M834 740V772M512 748V764"/>
+  </g>
+  <!-- truss: light lines with round joints -->
+  <g fill="none" stroke="#dff0ff" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="16" d="M190 596L351 318H673L834 596"/>
+    <path stroke-width="12" stroke-opacity="0.92" d="M351 318V596M512 318V596M673 318V596M351 318L512 596M673 318L512 596"/>
+    <path stroke-width="16" d="M190 596H834"/>
+  </g>
+  <!-- deck: the one accent colour -->
+  <rect x="134" y="572" width="756" height="46" fill="#ffc247"/>
+  <!-- joints -->
+  <g fill="#0b2447" stroke="#dff0ff" stroke-width="11">
+    <circle cx="351" cy="318" r="23"/><circle cx="512" cy="318" r="23"/><circle cx="673" cy="318" r="23"/>
+    <circle cx="351" cy="596" r="20"/><circle cx="512" cy="596" r="20"/><circle cx="673" cy="596" r="20"/>
+  </g>
+  <!-- anchors (the square-with-cross symbol of the blueprint view) -->
+  <g fill="#0b2447" stroke="#dff0ff" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="164" y="570" width="52" height="52"/><path d="M177 583L203 609M203 583L177 609"/>
+    <rect x="808" y="570" width="52" height="52"/><path d="M821 583L847 609M847 583L821 609"/>
+  </g>
+</svg>
