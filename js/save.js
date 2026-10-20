@@ -34,7 +34,7 @@
 (function (BB) {
   'use strict';
 
-  var SAVE_VERSION = 1;
+  var SAVE_VERSION = 3;
 
   var LS_KEY = 'brueckenbauer.save';
   var LS_PREV = LS_KEY + '.prev';
@@ -76,11 +76,28 @@
   }
 
   function defaultSandbox() {
-    return { span: 16, heightDiff: 0, water: true, rocks: 0, lowAnchors: true, highAnchors: false, vehicles: ['car'] };
+    return { span: 16, heightDiff: 0, water: true, rocks: 0, lowAnchors: true, highAnchors: false, vehicles: ['car'], wind: 0, ice: false };
   }
 
   function defaultSettings() {
-    return { muted: false, showStress: true };
+    return { muted: false, showStress: true, quality: 'mid', chaseCam: false, buildView: 'blueprint', snapGrid: true, volume: 0.7, sfx: true, music: false, testerMode: false, testerModeZeit: false, debugInfo: false };
+  }
+
+  // v3.3: two campaigns ("classic" = the worlds, "zeit" = Zeitreise). `active` is the one the menu continues in,
+  // `chosen` is false until the player picked one at the first start. Stars / completion stay in `progress` (level ids
+  // are unique – Zeitreise ids start with "Z-"); here only the position of every campaign is stored.
+  function defaultCampaigns() {
+    return { active: 'classic', chosen: false, classic: { world: null, level: null }, zeit: { epoch: null, level: null, seen: [] } };
+  }
+
+  // The weekly challenge replaces the daily one (the old `daily` record stays untouched).
+  // `history` keeps the best stars of every past week: { '2026-W41': 3, … }.
+  function defaultWeekly() {
+    return { week: null, seed: 0, completed: false, bestCost: null, stars: 0, history: {} };
+  }
+
+  function defaultDaily() {
+    return { date: null, seed: 0, completed: false, bestCost: null, stars: 0 };
   }
 
   function defaultState() {
@@ -95,6 +112,9 @@
       customLevels: [],
       sandbox: defaultSandbox(),
       settings: defaultSettings(),
+      daily: defaultDaily(),
+      weekly: defaultWeekly(),
+      campaigns: defaultCampaigns(),
       lastBackupAt: null
     };
   }
@@ -110,7 +130,25 @@
     // 0 → 1: saves without a version number (pre-release builds, hand-made or
     // partial files). The v1 layout is a superset of what those contained;
     // normalize() adds every missing field with its default.
-    function (s) { return s; }
+    function (s) { return s; },
+    // 1 → 2: added the world expansion (worlds, hydraulics, ships, …) and the
+    // daily challenge. Existing progress is untouched: built-in levels keep
+    // their ids (L01…L16), so `progress`/`bridges` need no change at all –
+    // normalize() only has to add the new `daily` field.
+    function (s) { return s; },
+    // 2 → 3: 3D graphics update. New: graphics settings (quality, chase camera), the weekly
+    // challenge record, bridges may contain foundations / split joints / hydraulic phases,
+    // levels may have routes, zones and prebuilt parts. Everything that existed before keeps its
+    // meaning: level ids (L01…, W2-…, W5-…) are unchanged, so progress, stars and saved bridges are
+    // simply carried over; normalize() fills in the new fields.
+    function (s) {
+      if (s && s.settings && typeof s.settings === 'object') {
+        if (s.settings.quality === undefined) s.settings.quality = 'mid';
+        if (s.settings.chaseCam === undefined) s.settings.chaseCam = false;
+      }
+      if (!s.weekly || typeof s.weekly !== 'object') s.weekly = defaultWeekly();
+      return s;
+    }
   ];
 
   function versionOf(s) {
@@ -185,7 +223,27 @@
     s.sandbox = fillDefaults(s.sandbox, defaultSandbox());
     if (!Array.isArray(s.sandbox.vehicles)) s.sandbox.vehicles = defaultSandbox().vehicles;
     s.settings = fillDefaults(s.settings, defaultSettings());
+    s.daily = fillDefaults(s.daily, defaultDaily());
+    if (typeof s.daily.date !== 'string') s.daily.date = null;
+    if (!isNum(s.daily.stars)) s.daily.stars = 0;
+    s.weekly = fillDefaults(s.weekly, defaultWeekly());
+    if (typeof s.weekly.week !== 'string') s.weekly.week = null;
+    if (!isNum(s.weekly.stars)) s.weekly.stars = 0;
+    if (!isObj(s.weekly.history)) s.weekly.history = {};
+    Object.keys(s.weekly.history).forEach(function (k) { if (!isNum(s.weekly.history[k])) delete s.weekly.history[k]; });
 
+    if (!isObj(s.campaigns)) s.campaigns = defaultCampaigns();
+    var cp = s.campaigns, cd = defaultCampaigns();
+    if (cp.active !== 'classic' && cp.active !== 'zeit') cp.active = 'classic';
+    cp.chosen = cp.chosen === true;
+    cp.classic = fillDefaults(cp.classic, cd.classic);
+    cp.zeit = fillDefaults(cp.zeit, cd.zeit);
+    if (!Array.isArray(cp.zeit.seen)) cp.zeit.seen = [];
+    cp.zeit.seen = cp.zeit.seen.filter(function (x) { return typeof x === 'string'; });
+    if (typeof cp.classic.world !== 'string') cp.classic.world = null;
+    if (typeof cp.classic.level !== 'string') cp.classic.level = null;
+    if (typeof cp.zeit.epoch !== 'string') cp.zeit.epoch = null;
+    if (typeof cp.zeit.level !== 'string') cp.zeit.level = null;
     s.lastBackupAt = (isNum(s.lastBackupAt) && s.lastBackupAt > 0) ? s.lastBackupAt : null;
     if (!isNum(s.epoch)) delete s.epoch;
     return s;
@@ -858,6 +916,63 @@
   function getStars(id) { var v = state.progress && state.progress.stars[id]; return isNum(v) ? v : 0; }
   function getBestCost(id) { var v = state.progress && state.progress.bestCost[id]; return isNum(v) ? v : null; }
 
+  // ---------------------------------------------------------------------------
+  // Daily challenge (one record for "today"; a new date simply overwrites it)
+  // ---------------------------------------------------------------------------
+  function getDaily(dateStr) {
+    var d = state.daily;
+    if (!isObj(d) || d.date !== dateStr) return { date: dateStr, seed: 0, completed: false, bestCost: null, stars: 0 };
+    return clone(d);
+  }
+  function completeDaily(dateStr, seed, cost, stars) {
+    if (typeof dateStr !== 'string' || !dateStr) return;
+    var d = (isObj(state.daily) && state.daily.date === dateStr) ? state.daily : { date: dateStr, seed: seed | 0, completed: false, bestCost: null, stars: 0 };
+    d.date = dateStr;
+    if (isNum(seed)) d.seed = seed | 0;
+    d.completed = true;
+    var s = isNum(stars) ? Math.max(0, Math.min(3, Math.round(stars))) : 0;
+    if (!isNum(d.stars) || s > d.stars) d.stars = s;
+    if (isNum(cost) && cost >= 0) {
+      var c = Math.round(cost);
+      if (!isNum(d.bestCost) || c < d.bestCost) d.bestCost = c;
+    }
+    state.daily = d;
+    change();
+    flush();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Weekly challenge (one record for "this week"; older weeks only keep their stars in `history`)
+  // ---------------------------------------------------------------------------
+  function getWeekly(weekKey) {
+    var w = state.weekly;
+    if (!isObj(w) || w.week !== weekKey) {
+      var hs = isObj(w) && isObj(w.history) && isNum(w.history[weekKey]) ? w.history[weekKey] : 0;
+      return { week: weekKey, seed: 0, completed: hs > 0, bestCost: null, stars: hs, history: {} };
+    }
+    return clone(w);
+  }
+  function completeWeekly(weekKey, seed, cost, stars) {
+    if (typeof weekKey !== 'string' || !weekKey) return;
+    var w = isObj(state.weekly) ? state.weekly : defaultWeekly();
+    if (!isObj(w.history)) w.history = {};
+    if (w.week !== weekKey) {              // a new week starts: remember the last one's result
+      if (w.week && w.completed && isNum(w.stars)) w.history[w.week] = Math.max(w.history[w.week] || 0, w.stars);
+      w.week = weekKey; w.seed = 0; w.completed = false; w.bestCost = null; w.stars = 0;
+    }
+    if (isNum(seed)) w.seed = seed | 0;
+    w.completed = true;
+    var st = isNum(stars) ? Math.max(0, Math.min(3, Math.round(stars))) : 0;
+    if (!isNum(w.stars) || st > w.stars) w.stars = st;
+    if (isNum(cost) && cost >= 0) {
+      var c = Math.round(cost);
+      if (!isNum(w.bestCost) || c < w.bestCost) w.bestCost = c;
+    }
+    state.weekly = w;
+    change();
+    flush();
+  }
+
   function saveCustomLevel(level) {
     if (!isObj(level) || typeof level.id !== 'string' || !level.id) return false;
     var copy;
@@ -906,6 +1021,26 @@
     var d = defaultSettings();
     return own(d, k) ? d[k] : undefined;
   }
+
+  // ---- campaigns (v3.3) ----
+  function getCampaigns() { return clone(state.campaigns) || defaultCampaigns(); }
+  /** patch: { active, chosen, classic: {world, level}, zeit: {epoch, level} } (only the given fields change) */
+  function setCampaigns(patch) {
+    if (!isObj(patch)) return;
+    var c = state.campaigns, changed = false;
+    if ((patch.active === 'classic' || patch.active === 'zeit') && c.active !== patch.active) { c.active = patch.active; changed = true; }
+    if (typeof patch.chosen === 'boolean' && c.chosen !== patch.chosen) { c.chosen = patch.chosen; changed = true; }
+    ['classic', 'zeit'].forEach(function (k) {
+      if (!isObj(patch[k])) return;
+      Object.keys(patch[k]).forEach(function (f) { if (own(c[k], f) && f !== 'seen' && c[k][f] !== patch[k][f]) { c[k][f] = patch[k][f]; changed = true; } });
+    });
+    if (changed) change();
+  }
+  function markEpochSeen(id) {
+    var seen = state.campaigns.zeit.seen;
+    if (typeof id === 'string' && seen.indexOf(id) < 0) { seen.push(id); change(); }
+  }
+  function epochSeen(id) { return state.campaigns.zeit.seen.indexOf(id) >= 0; }
 
   function lastBackupAt() { return isNum(state.lastBackupAt) ? state.lastBackupAt : null; }
 
@@ -1094,7 +1229,7 @@
       return {
         ok: true,
         state: migrated,
-        info: { completedLevels: completed, customLevels: migrated.customLevels.length, exportedAt: exportedAt }
+        info: { completedLevels: completed, completedZeit: Object.keys(migrated.progress.completed).filter(function (id) { return migrated.progress.completed[id] && /^Z-/.test(id); }).length, customLevels: migrated.customLevels.length, exportedAt: exportedAt }
       };
     } catch (e) {
       return importError('Der Spielstand konnte nicht gelesen werden.');
@@ -1137,8 +1272,16 @@
     deleteCustomLevel: deleteCustomLevel,
     getCustomLevels: getCustomLevels,
     getCustomLevel: getCustomLevel,
+    getDaily: getDaily,
+    completeDaily: completeDaily,
+    getWeekly: getWeekly,
+    completeWeekly: completeWeekly,
     setSetting: setSetting,
     getSetting: getSetting,
+    getCampaigns: getCampaigns,
+    setCampaigns: setCampaigns,
+    markEpochSeen: markEpochSeen,
+    epochSeen: epochSeen,
     exportFile: exportFile,
     parseImport: parseImport,
     applyImport: applyImport,

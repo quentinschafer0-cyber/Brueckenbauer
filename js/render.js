@@ -78,17 +78,23 @@
     wood:      { kind: 'wood', body: '#cd8c46', edge: '#4f2c10', top: '#f0c084', grain: '#8e5525', T: 0.26, px: 3.6 },
     steel:     { kind: 'steel', body: '#e85d2f', edge: '#5e1d0b', top: '#ffa47c', flange: '#a93915', hole: '#5f1d0b', T: 0.3, px: 4.0 },
     rope:      { kind: 'rope', body: '#3b332d', edge: '#120e0b', top: '#a8957c', T: 0.09, px: 1.9 },
+    concrete:  { kind: 'steel', body: '#8a8f98', edge: '#3f4349', top: '#c3c7cd', flange: '#6b6f76', hole: '#3f4349', T: 0.4, px: 5.0 },
+    rail:      { kind: 'steelroad', body: '#4b4540', edge: '#241f1b', top: '#6b6054', girder: '#5c5248', flange: '#443d35', rivet: '#9b8f82', T: 0.22, px: 2.8, Tg: 0.3, pxg: 3.0 },
   };
   // Draw order (back → front): structure first, decks last.
-  const MAT_DRAW_ORDER = ['wood', 'steel', 'rope', 'steelroad', 'road'];
+  const MAT_DRAW_ORDER = ['wood', 'concrete', 'steel', 'rope', 'steelroad', 'rail', 'road'];
   const STYLE_COLOR_KEYS = ['body', 'edge', 'top', 'line', 'girder', 'flange', 'rivet', 'grain', 'hole'];
 
   // Fallback vehicle data in case physics.js (BB.VEHICLES) is not loaded.
   const VEH_FALLBACK = {
-    bike:  { length: 1.8, height: 1.75, wheelRadius: 0.34, axles: [-0.55, 0.55], color: '#2a9d8f' },
-    car:   { length: 4.0, height: 1.5, wheelRadius: 0.36, axles: [-1.3, 1.3], color: '#e63946' },
-    bus:   { length: 10, height: 3.1, wheelRadius: 0.5, axles: [-3.2, 3.0], color: '#ffc233' },
-    truck: { length: 9, height: 3.4, wheelRadius: 0.5, axles: [-3.4, -2.3, 2.9], color: '#3a7bd5' },
+    bike:       { length: 1.8, height: 1.75, wheelRadius: 0.34, axles: [-0.55, 0.55], color: '#2a9d8f' },
+    motorcycle: { length: 2.0, height: 1.3, wheelRadius: 0.32, axles: [-0.75, 0.75], color: '#c0392b' },
+    car:        { length: 4.0, height: 1.5, wheelRadius: 0.36, axles: [-1.3, 1.3], color: '#e63946' },
+    bus:        { length: 10, height: 3.1, wheelRadius: 0.5, axles: [-3.2, 3.0], color: '#ffc233' },
+    truck:      { length: 9, height: 3.4, wheelRadius: 0.5, axles: [-3.4, -2.3, 2.9], color: '#3a7bd5' },
+    tanker:     { length: 12, height: 3.3, wheelRadius: 0.5, axles: [-4.2, -2.9, 4.5], color: '#95a5a6' },
+    crane:      { length: 9.5, height: 3.6, wheelRadius: 0.55, axles: [-3.5, -2.1, 3.1], color: '#f5b700' },
+    train:      { length: 24, height: 3.8, wheelRadius: 0.55, axles: [-10.5, -7, -3.5, 0, 3.5, 7, 10.5], color: '#34495e' },
   };
 
   // Distant hill layers: f = horizontal parallax factor, fy = vertical follow factor,
@@ -1183,9 +1189,126 @@
   }
 
   // ===========================================================================
-  // Dynamic world: flag, water
+  // Dynamic world: flag, water, hydraulics, ships, checkpoints
   // ===========================================================================
   const flagXs = new Float64Array(8), flagYs = new Float64Array(8);
+
+  /** Hydraulic pistons: a cylinder sleeve near the pivot and a rod reaching to the (possibly
+   *  moving) head. Uses the live simulation state when testing, else the level's starting pose. */
+  function drawPistons(V, level, sim) {
+    const defs = Array.isArray(level.pistons) ? level.pistons : [];
+    if (!defs.length) return;
+    const ctx = V.ctx, z = V.z;
+    const live = sim && sim._s && sim._s.pistons;
+    setWorld(V);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < defs.length; i++) {
+      const d = defs[i];
+      let px, py, hx, hy;
+      if (live && live[i]) { px = live[i].pivot.x; py = live[i].pivot.y; hx = live[i].head.x; hy = live[i].head.y; }
+      else {
+        const rad = num(d.angleDeg, 0) * Math.PI / 180;
+        const len = isNum(d.startLen) ? d.startLen : num(d.minLen, 1);
+        px = d.pivotX; py = d.pivotY; hx = px + Math.cos(rad) * len; hy = py + Math.sin(rad) * len;
+      }
+      if (!isNum(px) || !isNum(hx)) continue;
+      if (Math.max(px, hx) + 1 < V.minX || Math.min(px, hx) - 1 > V.maxX) continue;
+      const dx = hx - px, dy = hy - py, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+      const sleeve = Math.min(L * 0.4, 1.3);
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + ux * sleeve, py + uy * sleeve);
+      ctx.lineWidth = Math.max(0.1, 7 / z); ctx.strokeStyle = '#6b7280'; ctx.stroke();
+      ctx.lineWidth = Math.max(0.06, 4.6 / z); ctx.strokeStyle = '#aeb4bd'; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px + ux * sleeve * 0.7, py + uy * sleeve * 0.7); ctx.lineTo(hx, hy);
+      ctx.lineWidth = Math.max(0.05, 3.2 / z); ctx.strokeStyle = '#dfe3e8'; ctx.stroke();
+      ctx.lineWidth = Math.max(0.02, 1.2 / z); ctx.strokeStyle = '#8a8f98'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, Math.max(0.12, 3 / z), 0, TAU); ctx.fillStyle = '#3f4349'; ctx.fill();
+      ctx.beginPath(); ctx.arc(hx, hy, Math.max(0.1, 2.4 / z), 0, TAU); ctx.fillStyle = '#3f4349'; ctx.fill();
+    }
+  }
+
+  /** Passage gates (classic fallback): dashed frame in the bridge plane with the vessel's front-view outline. */
+  function drawShips(V, level, sim) {
+    const defs = BB.Gates ? BB.Gates.of(level) : [];
+    if (!defs.length) return;
+    const ctx = V.ctx, z = V.z;
+    setWorld(V);
+    for (let i = 0; i < defs.length; i++) {
+      const g = defs[i], live = sim && sim.gates && sim.gates[i];
+      const w = g.x1 - g.x0, h = g.y1 - g.y0, cx = (g.x0 + g.x1) / 2;
+      const blocked = live && live.state === 'blocked';
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      const bw = Math.min(w * 0.7, 7), hullH = Math.min(1.3, h * 0.3);
+      ctx.beginPath(); ctx.moveTo(cx - bw / 2, g.y0 + hullH); ctx.lineTo(cx - bw * 0.36, g.y0); ctx.lineTo(cx + bw * 0.36, g.y0); ctx.lineTo(cx + bw / 2, g.y0 + hullH); ctx.closePath();
+      ctx.fillStyle = g.kind === 'ship' ? '#34495e' : '#7a8794'; ctx.fill();
+      ctx.lineWidth = Math.max(0.04, 1.2 / z); ctx.strokeStyle = '#1b2733'; ctx.stroke();
+      ctx.beginPath(); rrect(ctx, cx - bw * 0.3, g.y0 + hullH, bw * 0.6, Math.max(0.4, h * 0.3), 0.08); ctx.fillStyle = '#5d6d7e'; ctx.fill(); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([0.7, 0.45]); ctx.lineWidth = Math.max(0.05, 2 / z); ctx.strokeStyle = blocked ? '#d93b30' : '#c98a00';
+      ctx.strokeRect(g.x0, g.y0, w, h);
+      ctx.restore();
+    }
+  }
+
+  // Per-world colour grade (screen-space overlay) – cheap but gives each world a distinct mood
+  // without re-deriving every background drawing routine.
+  const WORLD_TINT = {
+    'wuesten-canyon': 'rgba(255,176,86,0.14)',
+    hafenstadt: 'rgba(50,130,150,0.10)',
+    winterberge: 'rgba(205,228,248,0.20)',
+    'industrie-nacht': 'rgba(8,10,24,0.60)',
+  };
+  function drawWorldTint(V, level) {
+    const c = WORLD_TINT[level.world];
+    if (!c) return;
+    setScreen(V);
+    V.ctx.fillStyle = c;
+    V.ctx.fillRect(0, 0, V.W, V.H);
+  }
+
+  /** Icy pale wash + drifting wind streaks – cheap full-viewport weather ambience (screen space). */
+  function drawWeather(V, level, t) {
+    const ice = !!level.ice, wind = num(level.wind, 0);
+    if (!ice && wind === 0) return;
+    const ctx = V.ctx, W = V.W, H = V.H;
+    setScreen(V);
+    if (ice) {
+      ctx.fillStyle = 'rgba(214,238,250,0.16)';
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (wind !== 0) {
+      const dir = wind > 0 ? 1 : -1, speed = Math.min(6, Math.abs(wind)) * 90;
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 1.4;
+      const n = 10;
+      for (let i = 0; i < n; i++) {
+        const row = i / n, y = H * row;
+        const off = mod(t * speed + i * 137, W + 160) - 80;
+        const x = dir > 0 ? off : W - off;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - dir * 46, y + 7);
+        ctx.stroke();
+      }
+    }
+  }
+
+  /** Checkpoint posts on the deck/ground that advance the hydraulics phase when crossed. */
+  function drawCheckpoints(V, level, t) {
+    const cps = Array.isArray(level.checkpoints) ? level.checkpoints : [];
+    if (!cps.length) return;
+    const ctx = V.ctx, z = V.z, g = level.ground || [];
+    setWorld(V);
+    for (let i = 0; i < cps.length; i++) {
+      const x = cps[i] && cps[i].x;
+      if (!isNum(x) || x + 1 < V.minX || x - 1 > V.maxX) continue;
+      const gy = g.length ? surfaceY(g, x) : 0, h = 2.0;
+      ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy + h);
+      ctx.lineWidth = Math.max(0.05, 1.6 / z); ctx.strokeStyle = '#2b3036'; ctx.stroke();
+      const flap = Math.sin((t || 0) * 4 - i) * 0.06;
+      ctx.beginPath();
+      ctx.moveTo(x, gy + h); ctx.lineTo(x + 0.5, gy + h - 0.18 + flap); ctx.lineTo(x, gy + h - 0.36);
+      ctx.closePath(); ctx.fillStyle = '#ffb703'; ctx.fill();
+    }
+  }
 
   function drawFlag(V, level, t) {
     if (!isNum(level.flagX)) return;
@@ -2215,9 +2338,9 @@
       ctx.lineCap = 'round';
       const z = V.z;
       switch (v.type) {
-        case 'bike': drawBike(ctx, def, wheelBuf, nw, z, def.color); break;
-        case 'bus': drawBus(ctx, def, wheelBuf, nw, z, def.color); break;
-        case 'truck': drawTruck(ctx, def, wheelBuf, nw, z, def.color); break;
+        case 'bike': case 'motorcycle': drawBike(ctx, def, wheelBuf, nw, z, def.color); break;
+        case 'bus': case 'train': drawBus(ctx, def, wheelBuf, nw, z, def.color); break;
+        case 'truck': case 'tanker': case 'crane': drawTruck(ctx, def, wheelBuf, nw, z, def.color); break;
         default: drawCar(ctx, def, wheelBuf, nw, z, def.color);
       }
     }
@@ -2510,10 +2633,13 @@
       ctx.drawImage(skyCanvas, 0, 0);
       drawClouds(V, cloudSprites, time);
       if (!level) { ctx.setTransform(1, 0, 0, 1, 0, 0); return; }
+      drawWorldTint(V, level);
       drawStatic(scene, level);
 
       drawFlag(V, level, time);
+      drawCheckpoints(V, level, time);
       const sim = mode === 'test' && scene.sim ? scene.sim : null;
+      drawPistons(V, level, sim);
       if (sim) {
         drawSimBeams(scene, sim, level);
         drawVehicles(sim);
@@ -2521,12 +2647,23 @@
         drawBridgeBeams(scene, level);
       }
       drawWater(V, level, time);
+      drawShips(V, level, sim);
       drawFx();
+      drawWeather(V, level, time);
 
       // overlays
       if (scene.deleteHighlight !== null && scene.deleteHighlight !== undefined) drawDeleteHighlight(scene, time);
       if (scene.preview) drawPreview(scene.preview, time);
+      if (BB.Overlay && BB.Overlay.drawRoutes) { setScreen(V); BB.Overlay.drawRoutes(ctx, function (x, y) { return [V.ox + x * V.z, V.oy - y * V.z]; }, V.z, level, { lines: true, preview: (scene.mode || 'build') === 'build', sim: (scene.mode === 'test' && scene.sim) ? scene.sim : null }); }
+      if (scene.overlay && BB.Overlay) { setScreen(V); BB.Overlay.draw(ctx, function (x, y) { return [V.ox + x * V.z, V.oy - y * V.z]; }, V.z, scene.overlay, time); }
       if (scene.hoverNode) drawHoverNode(scene.hoverNode, time);
+      if (scene.hoverFoundation) {
+        const hf = scene.hoverFoundation, surf = isNum(hf[4]) ? hf[4] : hf[1] - 1.2, bot = Math.min(surf, hf[1] - 0.3);
+        const x0 = V.ox + (hf[0] - 0.85) * V.z, x1 = V.ox + (hf[0] + 0.85) * V.z, y0 = V.oy - hf[1] * V.z, y1 = V.oy - bot * V.z;
+        setScreen(V);
+        ctx.fillStyle = hf[2] ? 'rgba(70,200,120,0.5)' : 'rgba(240,70,60,0.5)'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.lineWidth = 2.5; ctx.strokeStyle = hf[2] ? '#fff' : '#e03a30'; ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+      }
       if (mode === 'leveledit' && scene.leveledit) drawGroundHandles(level, scene.leveledit);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
